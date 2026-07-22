@@ -1,3 +1,4 @@
+// Firestore CRUD service for user-scoped mood journal entries
 import {
   addDoc,
   collection,

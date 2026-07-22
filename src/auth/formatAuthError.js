@@ -1,3 +1,4 @@
+// Maps Firebase auth error codes to human-readable user messages
 export function formatAuthError(error) {
   if (!error) return "";
   const msg = typeof error === "string" ? error : error.message || "";

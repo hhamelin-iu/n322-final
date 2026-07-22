@@ -1,3 +1,4 @@
+// Firestore CRUD service for user-scoped notes
 import {
   addDoc,
   collection,
