@@ -1,13 +1,14 @@
 import React, { useEffect } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import { LexendZetta_400Regular } from "@expo-google-fonts/lexend-zetta";
 import { NotoSans_400Regular } from "@expo-google-fonts/noto-sans";
 import * as SplashScreen from "expo-splash-screen";
 import { AuthProvider } from "../src/auth/AuthContext";
-import { ThemeProvider, usePalette } from "../styles/theme";
-import ThemeToggleButton from "../components/ThemeToggleButton";
+import { ThemeProvider, usePalette, useIsDark } from "../styles/theme";
+import WebTopNav from "../components/WebTopNav";
+import Footer from "../components/Footer";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -34,12 +35,50 @@ export default function RootLayout() {
 
 function AppStack() {
   const palette = usePalette();
-  const isDark = palette.background.toLowerCase() === "#0f172a";
+  const isDark = useIsDark();
+  const isWeb = Platform.OS === "web";
+
   return (
     <View style={{ flex: 1, backgroundColor: palette.background }}>
+      {/* Ambient background blobs — matching portfolio atmospheric radial gradients */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: 0, left: 0, right: 0, bottom: 0,
+          overflow: "hidden",
+          zIndex: 0,
+        }}
+      >
+        <View
+          style={{
+            position: "absolute",
+            width: 600,
+            height: 600,
+            borderRadius: 300,
+            top: -150,
+            left: "-10%",
+            backgroundColor: isDark ? "rgba(99,102,241,0.07)" : "rgba(56,189,248,0.07)",
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            width: 500,
+            height: 500,
+            borderRadius: 250,
+            bottom: "10%",
+            right: "-5%",
+            backgroundColor: isDark ? "rgba(168,85,247,0.06)" : "rgba(139,92,246,0.05)",
+          }}
+        />
+      </View>
+
+      <View style={{ flex: 1, zIndex: 1 }}>
+        {isWeb && <WebTopNav />}
       <Stack
         screenOptions={{
-          headerShown: true,
+          headerShown: !isWeb,
           headerStyle: { backgroundColor: palette.background, height: 48 },
           contentStyle: { backgroundColor: palette.background },
           headerTintColor: palette.text,
@@ -52,16 +91,15 @@ function AppStack() {
           headerRightContainerStyle: { alignItems: "flex-end", paddingBottom: 6 },
           headerBackTitleVisible: false,
           headerShadowVisible: false,
-          headerRight: () => (
-            <ThemeToggleButton style={{ paddingRight: 8, marginRight: 12 }} />
-          ),
           statusBarStyle: isDark ? "light" : "dark",
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: "fade" }} />
-        <Stack.Screen name="login" options={{ title: "Login" }} />
-        <Stack.Screen name="register" options={{ title: "Register" }} />
+        <Stack.Screen name="login" options={{ title: "Login", headerShown: !isWeb }} />
+        <Stack.Screen name="register" options={{ title: "Register", headerShown: !isWeb }} />
       </Stack>
+      {isWeb && <Footer />}
+      </View>
     </View>
   );
 }

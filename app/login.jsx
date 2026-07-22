@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../src/firebase/firebaseConfig";
 import { useAuth } from "../src/auth/AuthContext";
+import { formatAuthError } from "../src/auth/formatAuthError";
 import PrimaryButton from "../components/PrimaryButton";
 import { usePalette, useTheme } from "../styles/theme";
 
@@ -41,7 +42,7 @@ export default function LoginScreen() {
       setSubmitting(true);
       await signInWithEmailAndPassword(auth, email.trim(), password);
     } catch (e) {
-      setError(e.message || "Could not sign in.");
+      setError(formatAuthError(e));
     } finally {
       setSubmitting(false);
     }
@@ -55,7 +56,7 @@ export default function LoginScreen() {
       <View style={theme.screen}>
         <View style={theme.card}>
           <Text style={theme.heading}>Welcome back</Text>
-          <Text style={theme.subheading}>Sign in to manage your tasks.</Text>
+          <Text style={theme.subheading}>Sign in to manage your workspace.</Text>
           <TextInput
             value={email}
             onChangeText={setEmail}
@@ -83,7 +84,11 @@ export default function LoginScreen() {
             returnKeyType="go"
             onSubmitEditing={onSubmit}
           />
-          {!!error && <Text style={{ color: palette.danger }}>{error}</Text>}
+          {!!error && (
+            <Text style={{ color: palette.danger, fontSize: 14, marginTop: 4 }}>
+              {error}
+            </Text>
+          )}
           <PrimaryButton
             title={submitting ? "Signing in..." : "Login"}
             onPress={onSubmit}

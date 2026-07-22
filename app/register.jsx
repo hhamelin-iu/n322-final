@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "../src/firebase/firebaseConfig";
 import { useAuth } from "../src/auth/AuthContext";
+import { formatAuthError } from "../src/auth/formatAuthError";
 import PrimaryButton from "../components/PrimaryButton";
 import { usePalette, useTheme } from "../styles/theme";
 
@@ -49,7 +50,7 @@ export default function RegisterScreen() {
         await updateProfile(cred.user, { displayName: displayName.trim() });
       }
     } catch (e) {
-      setError(e.message || "Could not register.");
+      setError(formatAuthError(e));
     } finally {
       setSubmitting(false);
     }
@@ -64,7 +65,7 @@ export default function RegisterScreen() {
         <View style={theme.card}>
           <Text style={theme.heading}>Create account</Text>
           <Text style={theme.subheading}>
-            Register to start saving your own tasks.
+            Register to start saving your notes, tasks, and journal entries.
           </Text>
           <TextInput
             value={displayName}
@@ -102,7 +103,11 @@ export default function RegisterScreen() {
             returnKeyType="go"
             onSubmitEditing={onSubmit}
           />
-          {!!error && <Text style={{ color: palette.danger }}>{error}</Text>}
+          {!!error && (
+            <Text style={{ color: palette.danger, fontSize: 14, marginTop: 4 }}>
+              {error}
+            </Text>
+          )}
           <PrimaryButton
             title={submitting ? "Creating..." : "Register"}
             onPress={onSubmit}

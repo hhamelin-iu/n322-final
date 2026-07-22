@@ -1,28 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Platform, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import {
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  where,
-} from "firebase/firestore";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../../src/auth/AuthContext";
-import { db } from "../../../src/firebase/firebaseConfig";
+import {
+  subscribeToTasks,
+  toggleTaskCompleted,
+  deleteTask,
+} from "../../../src/services/tasksService";
 import PrimaryButton from "../../../components/PrimaryButton";
 import StatusMessage from "../../../components/StatusMessage";
 import TapScale from "../../../components/TapScale";
+import Card from "../../../components/Card";
+import Badge from "../../../components/Badge";
+import EmptyState from "../../../components/EmptyState";
 import { usePalette, useTheme } from "../../../styles/theme";
 
 export default function TaskListScreen() {
   const theme = useTheme();
   const router = useRouter();
   const palette = usePalette();
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const [tasks, setTasks] = useState([]);
+  const [filter, setFilter] = useState("all"); // 'all', 'pending', 'completed'
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loadingTasks, setLoadingTasks] = useState(true);
@@ -35,15 +35,10 @@ export default function TaskListScreen() {
 
   useEffect(() => {
     if (!user) return;
-    const tasksQuery = query(
-      collection(db, "tasks"),
-      where("userId", "==", user.uid),
-      orderBy("updatedAt", "desc")
-    );
-    const unsubscribe = onSnapshot(
-      tasksQuery,
-      (snap) => {
-        const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    setLoadingTasks(true);
+    const unsubscribe = subscribeToTasks(
+      user.uid,
+      (rows) => {
         setTasks(rows);
         setError("");
         setLoadingTasks(false);
@@ -63,10 +58,19 @@ export default function TaskListScreen() {
     return () => clearTimeout(timer);
   }, [success]);
 
+  const handleToggle = async (task) => {
+    try {
+      await toggleTaskCompleted(task.id, task.completed);
+      setSuccess(task.completed ? "Task marked pending" : "Task completed! 🎉");
+    } catch (e) {
+      setError("Could not update task status.");
+    }
+  };
+
   const handleDelete = async (taskId) => {
     const doDelete = async () => {
       try {
-        await deleteDoc(doc(db, "tasks", taskId));
+        await deleteTask(taskId);
         setSuccess("Task deleted");
       } catch (e) {
         setError(e.message || "Could not delete task.");
@@ -86,75 +90,183 @@ export default function TaskListScreen() {
     ]);
   };
 
-    const header = useMemo(
+  const filteredTasks = useMemo(() => {
+    if (filter === "completed") return tasks.filter((t) => t.completed);
+    if (filter === "pending") return tasks.filter((t) => !t.completed);
+    return tasks;
+  }, [tasks, filter]);
+
+  const header = useMemo(
     () => (
-      <View style={{ gap: 12, marginBottom: 12 }}>
+      <View style={{ gap: 12, marginBottom: 16 }}>
         <Text style={theme.heading}>Your tasks</Text>
         <Text style={theme.subheading}>
-          Create tasks, edit them, and remove what you no longer need.
+          Organize your tasks, check off completed items, and track your progress.
         </Text>
         {!!success && <StatusMessage message={success} type="success" />}
         {!!error && <StatusMessage message={error} type="error" />}
-        <PrimaryButton
-          title="Add task"
-          onPress={() => router.push("/hub/item-form")}
-        />
-        <Pressable onPress={signOut}>
-          <Text style={[theme.subheading, theme.link]}>Log out</Text>
-        </Pressable>
-        {loadingTasks && (
-          <Text style={theme.subheading}>Loading your tasks...</Text>
-        )}
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 4,
+          }}
+        >
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {["all", "pending", "completed"].map((tab) => {
+              const active = filter === tab;
+              return (
+                <Pressable
+                  key={tab}
+                  onPress={() => setFilter(tab)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                    backgroundColor: active
+                      ? palette.badgeBg
+                      : palette.surfaceSecondary,
+                    borderWidth: 1,
+                    borderColor: active ? palette.badgeBorder : palette.border,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "700",
+                      color: active ? palette.badgeText : palette.muted,
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {tab}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <PrimaryButton
+            title="+ Add task"
+            onPress={() => router.push("/hub/item-form")}
+          />
+        </View>
       </View>
     ),
-    [error, loadingTasks, router, signOut, success, theme]
+    [error, filter, palette, router, success, theme]
   );
 
-  const renderItem = ({ item }) => (
-    <View style={theme.card}>
-      <Text style={theme.heading}>{item.title}</Text>
-      <Text style={theme.subheading}>{item.details || "No details yet."}</Text>
-      <View style={{ flexDirection: "row", gap: 12 }}>
-        <PrimaryButton
-          title="Edit"
-          onPress={() =>
-            router.push({ pathname: "/hub/item-form", params: { id: item.id } })
-          }
-        />
-        <TapScale onPress={() => handleDelete(item.id)}>
-          <View
+  const renderItem = ({ item }) => {
+    const titleText = item.name || item.title || "Untitled Task";
+    const isCompleted = !!item.completed;
+
+    return (
+      <Card style={{ gap: 12 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <Pressable
+            onPress={() => handleToggle(item)}
             style={{
-              paddingVertical: 10,
-              paddingHorizontal: 14,
-              borderRadius: 12,
-              backgroundColor: `${palette.danger}15`,
-              borderWidth: 1,
-              borderColor: `${palette.danger}33`,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              flex: 1,
             }}
           >
-            <Text style={{ color: palette.danger, fontWeight: "700" }}>
+            <Ionicons
+              name={isCompleted ? "checkmark-circle" : "ellipse-outline"}
+              size={24}
+              color={isCompleted ? "#22c55e" : palette.muted}
+            />
+            <Text
+              style={[
+                theme.heading,
+                { fontSize: 18 },
+                isCompleted && {
+                  textDecorationLine: "line-through",
+                  color: palette.muted,
+                },
+              ]}
+            >
+              {titleText}
+            </Text>
+          </Pressable>
+
+          <Badge
+            label={isCompleted ? "Completed" : "Pending"}
+            type={isCompleted ? "success" : "pending"}
+          />
+        </View>
+
+        {!!item.details && (
+          <Text style={[theme.subheading, { fontSize: 14 }]}>
+            {item.details}
+          </Text>
+        )}
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: 12,
+            marginTop: 4,
+            borderTopWidth: 1,
+            borderTopColor: palette.border,
+            paddingTop: 10,
+          }}
+        >
+          <Pressable
+            onPress={() =>
+              router.push({ pathname: "/hub/item-form", params: { id: item.id } })
+            }
+          >
+            <Text style={{ color: palette.accent, fontWeight: "700", fontSize: 14 }}>
+              Edit
+            </Text>
+          </Pressable>
+
+          <Pressable onPress={() => handleDelete(item.id)}>
+            <Text style={{ color: palette.danger, fontWeight: "700", fontSize: 14 }}>
               Delete
             </Text>
-          </View>
-        </TapScale>
-      </View>
-    </View>
-  );
+          </Pressable>
+        </View>
+      </Card>
+    );
+  };
 
   return (
     <View style={theme.screen}>
       {header}
       <FlatList
-        data={tasks}
+        data={filteredTasks}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         ListEmptyComponent={
           !loadingTasks ? (
-            <Text style={theme.subheading}>
-              No tasks yet. Tap "Add task" to create your first one.
-            </Text>
-          ) : null
+            <EmptyState
+              iconName="checkbox-outline"
+              title={
+                filter === "all"
+                  ? "No tasks yet"
+                  : `No ${filter} tasks`
+              }
+              description="Keep track of your to-dos by creating your first task."
+              actionTitle="Add a task"
+              onAction={() => router.push("/hub/item-form")}
+            />
+          ) : (
+            <Text style={theme.subheading}>Loading tasks...</Text>
+          )
         }
       />
     </View>

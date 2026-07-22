@@ -1,4 +1,4 @@
-import { TouchableOpacity } from "react-native";
+import { Platform, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 import ThemeToggleButton from "../../../components/ThemeToggleButton";
@@ -28,7 +28,7 @@ export default function HubStack() {
       screenOptions={{
         animation: "fade",
         detachPreviousScreen: false,
-        headerShown: true,
+        headerShown: Platform.OS !== "web",
         headerStyle: { backgroundColor: palette.background, height: 48 },
         headerTintColor: palette.text,
         contentStyle: { backgroundColor: palette.background },
