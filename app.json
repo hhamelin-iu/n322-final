@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "n322-final",
+    "name": "MyWorkspace",
     "slug": "n322-final",
     "scheme": "n322-final",
     "version": "1.0.0",
@@ -24,7 +24,13 @@
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "MyWorkspace",
+      "shortName": "MyWorkspace",
+      "description": "Your personal productivity workspace — notes, tasks, and mood journal.",
+      "lang": "en",
+      "themeColor": "#0f172a",
+      "backgroundColor": "#0f172a"
     },
     "plugins": [
       "expo-router"
