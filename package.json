@@ -5,6 +5,8 @@
   "scripts": {
     "start": "expo start",
     "web": "expo start --web",
+    "build:web": "expo export -p web",
+    "build:web:proxy": "EXPO_BASE_URL=/workspace expo export -p web",
     "android": "expo start --android",
     "ios": "expo start --ios"
   },
