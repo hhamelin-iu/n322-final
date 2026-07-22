@@ -3,13 +3,14 @@ import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { collection, getDocs, query, where, limit } from "firebase/firestore";
 import PrimaryButton from "../../components/PrimaryButton";
 import ThemeToggleButton from "../../components/ThemeToggleButton";
 import Card from "../../components/Card";
 import TapScale from "../../components/TapScale";
 import { useAuth } from "../../src/auth/AuthContext";
-import { db } from "../../src/firebase/firebaseConfig";
+import { subscribeToNotes } from "../../src/services/notesService";
+import { subscribeToTasks } from "../../src/services/tasksService";
+import { subscribeToMoodEntries } from "../../src/services/moodJournalService";
 import { usePalette, useTheme } from "../../styles/theme";
 
 const QUICK_ACTIONS = [
@@ -52,28 +53,46 @@ export default function DashboardScreen() {
   }, [loading, user, router]);
 
   useEffect(() => {
-    const fetchCounts = async () => {
-      if (!user) return;
-      try {
-        const [notesSnap, tasksSnap, moodSnap] = await Promise.all([
-          getDocs(query(collection(db, "notes"), where("userId", "==", user.uid), limit(50))),
-          getDocs(query(collection(db, "tasks"), where("userId", "==", user.uid), limit(50))),
-          getDocs(query(collection(db, "moodEntries"), where("userId", "==", user.uid), limit(50))),
-        ]);
-        const completedTasks = tasksSnap.docs.filter((d) => d.data().completed).length;
-        setCounts({
-          notes: notesSnap.size,
-          tasks: tasksSnap.size,
-          moods: moodSnap.size,
-          completedTasks,
-        });
-      } catch (e) {
-        // Graceful fallback
-      } finally {
+    if (!user) return;
+    setLoadingTiles(true);
+
+    const unsubNotes = subscribeToNotes(
+      user.uid,
+      (rows) => {
+        setCounts((prev) => ({ ...prev, notes: rows.length }));
         setLoadingTiles(false);
-      }
+      },
+      () => setLoadingTiles(false)
+    );
+
+    const unsubMoods = subscribeToMoodEntries(
+      user.uid,
+      (rows) => {
+        setCounts((prev) => ({ ...prev, moods: rows.length }));
+        setLoadingTiles(false);
+      },
+      () => setLoadingTiles(false)
+    );
+
+    const unsubTasks = subscribeToTasks(
+      user.uid,
+      (rows) => {
+        const completedTasks = rows.filter((d) => d.completed).length;
+        setCounts((prev) => ({
+          ...prev,
+          tasks: rows.length,
+          completedTasks,
+        }));
+        setLoadingTiles(false);
+      },
+      () => setLoadingTiles(false)
+    );
+
+    return () => {
+      unsubNotes();
+      unsubMoods();
+      unsubTasks();
     };
-    fetchCounts();
   }, [user]);
 
   const name = useMemo(() => {

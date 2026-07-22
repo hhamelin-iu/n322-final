@@ -91,9 +91,14 @@ export default function TaskListScreen() {
   };
 
   const filteredTasks = useMemo(() => {
-    if (filter === "completed") return tasks.filter((t) => t.completed);
-    if (filter === "pending") return tasks.filter((t) => !t.completed);
-    return tasks;
+    let list = tasks;
+    if (filter === "completed") list = tasks.filter((t) => t.completed);
+    else if (filter === "pending") list = tasks.filter((t) => !t.completed);
+
+    return [...list].sort((a, b) => {
+      if (!!a.completed === !!b.completed) return 0;
+      return a.completed ? 1 : -1;
+    });
   }, [tasks, filter]);
 
   const header = useMemo(
