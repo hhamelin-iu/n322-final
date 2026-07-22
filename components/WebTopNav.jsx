@@ -38,7 +38,7 @@ export default function WebTopNav() {
       ]}
     >
       <View style={[styles.inner, { maxWidth: 1280 }]}>
-        {/* Brand */}
+        {/* Brand — left */}
         <Pressable
           onPress={() => router.push("/")}
           style={({ hovered }) => [styles.brand, hovered && { opacity: 0.8 }]}
@@ -50,37 +50,39 @@ export default function WebTopNav() {
           </Text>
         </Pressable>
 
-        {/* Nav links */}
-        <View style={styles.links}>
-          {NAV_LINKS.map((link) => {
-            const active = isActive(link.route);
-            return (
-              <Pressable
-                key={link.label}
-                onPress={() => router.push(link.route)}
-                style={({ hovered }) => [
-                  styles.link,
-                  active && { backgroundColor: palette.badgeBg },
-                  hovered && !active && { backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.linkText,
-                    { color: active ? palette.badgeText : palette.muted },
+        {/* Nav links — absolutely centered */}
+        <View style={styles.linksCenter}>
+          <View style={styles.links}>
+            {NAV_LINKS.map((link) => {
+              const active = isActive(link.route);
+              return (
+                <Pressable
+                  key={link.label}
+                  onPress={() => router.push(link.route)}
+                  style={({ hovered }) => [
+                    styles.link,
+                    active && { backgroundColor: palette.badgeBg },
+                    hovered && !active && { backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" },
                   ]}
                 >
-                  {link.label.toUpperCase()}
-                </Text>
-                {active && (
-                  <View style={[styles.activeLine, { backgroundColor: palette.accent }]} />
-                )}
-              </Pressable>
-            );
-          })}
+                  <Text
+                    style={[
+                      styles.linkText,
+                      { color: active ? palette.badgeText : palette.muted },
+                    ]}
+                  >
+                    {link.label.toUpperCase()}
+                  </Text>
+                  {active && (
+                    <View style={[styles.activeLine, { backgroundColor: palette.accent }]} />
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
-        {/* Theme toggle */}
+        {/* Theme toggle — right */}
         <Pressable
           onPress={toggleTheme}
           style={({ hovered }) => [
@@ -125,6 +127,13 @@ const styles = StyleSheet.create({
     marginHorizontal: "auto",
     width: "100%",
     height: 60,
+  },
+  linksCenter: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    pointerEvents: "box-none",
   },
   brand: {
     flexDirection: "row",
