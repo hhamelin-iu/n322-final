@@ -1,5 +1,7 @@
 import React from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import * as Linking from "expo-linking";
+import { Ionicons } from "@expo/vector-icons";
 import { usePalette } from "../styles/theme";
 
 export default function Footer() {
@@ -7,6 +9,10 @@ export default function Footer() {
 
   const palette = usePalette();
   const year = new Date().getFullYear();
+
+  const handleOpenSource = () => {
+    Linking.openURL("https://github.com/hhamelin-iu/n322-final");
+  };
 
   return (
     <View
@@ -26,6 +32,23 @@ export default function Footer() {
         <Text style={[styles.text, { color: palette.textLight }]}>
           All data synced with Firebase
         </Text>
+        <View style={[styles.pip, { backgroundColor: palette.accent }]} />
+        <Pressable
+          onPress={handleOpenSource}
+          accessibilityRole="link"
+          accessibilityLabel="View source code on GitHub"
+          href="https://github.com/hhamelin-iu/n322-final"
+          hrefAttrs={{ target: "_blank", rel: "noopener noreferrer" }}
+          style={({ hovered }) => [
+            styles.linkBtn,
+            hovered && { opacity: 0.75 },
+          ]}
+        >
+          <Ionicons name="logo-github" size={14} color={palette.textLight} style={{ marginRight: 4 }} />
+          <Text style={[styles.text, styles.linkText, { color: palette.textLight }]}>
+            Source Code
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -42,6 +65,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    flexWrap: "wrap",
     gap: 12,
     maxWidth: 1200,
     marginHorizontal: "auto",
@@ -54,5 +78,13 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     opacity: 0.5,
+  },
+  linkBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    cursor: "pointer",
+  },
+  linkText: {
+    textDecorationLine: "underline",
   },
 });
