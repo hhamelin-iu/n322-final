@@ -9,6 +9,7 @@ import { AuthProvider } from "../src/auth/AuthContext";
 import { ThemeProvider, usePalette, useIsDark } from "../styles/theme";
 import WebTopNav from "../components/WebTopNav";
 import Footer from "../components/Footer";
+import PortfolioReturnBanner from "../components/PortfolioReturnBanner";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -75,6 +76,7 @@ function AppStack() {
       </View>
 
       <View style={{ flex: 1, zIndex: 1 }}>
+        <PortfolioReturnBanner />
         {isWeb && <WebTopNav />}
       <Stack
         screenOptions={{
